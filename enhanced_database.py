@@ -158,11 +158,74 @@ class EnhancedDatabaseManager:
                 )
             """))
 
+            # Backtesting results table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS backtesting_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_name TEXT NOT NULL,
+                    inception_date TIMESTAMP,
+                    total_return_pct REAL,
+                    annualized_return_pct REAL,
+                    sharpe_ratio REAL,
+                    volatility REAL,
+                    mean_price REAL,
+                    std_dev REAL,
+                    trend TEXT,
+                    analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Grading multiplier snapshots table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS grading_multipliers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_name TEXT NOT NULL,
+                    ungraded_avg_price REAL,
+                    psa10_avg_price REAL,
+                    multiplier REAL,
+                    net_profit REAL,
+                    roi_percentage REAL,
+                    worth_grading BOOLEAN,
+                    snapshot_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # BUY/SELL/HOLD signals table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS trading_signals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_name TEXT NOT NULL,
+                    price REAL,
+                    signal TEXT,
+                    confidence REAL,
+                    z_score REAL,
+                    reason TEXT,
+                    signal_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Card metadata table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS card_metadata (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_name TEXT NOT NULL UNIQUE,
+                    inception_date TIMESTAMP,
+                    set_name TEXT,
+                    card_number TEXT,
+                    rarity TEXT,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+
             # Create optimized indexes for vectorized queries
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_card_name_date ON card_prices(card_name, date_recorded)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_source_date ON card_prices(source, date_recorded)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_price_date ON card_prices(price, date_recorded)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_graded ON card_prices(graded, grade_value)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_analysis_card ON analysis_results(card_name)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_backtest_card ON backtesting_results(card_name)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_grading_card ON grading_multipliers(card_name)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_signals_card ON trading_signals(card_name, signal_date)"))
 
             conn.commit()
 
@@ -197,10 +260,73 @@ class EnhancedDatabaseManager:
                     analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            
+            # Backtesting results table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS backtesting_results (
+                    id SERIAL PRIMARY KEY,
+                    card_name VARCHAR(255) NOT NULL,
+                    inception_date TIMESTAMP,
+                    total_return_pct DECIMAL(8,2),
+                    annualized_return_pct DECIMAL(8,2),
+                    sharpe_ratio DECIMAL(6,3),
+                    volatility DECIMAL(8,2),
+                    mean_price DECIMAL(10,2),
+                    std_dev DECIMAL(10,2),
+                    trend VARCHAR(50),
+                    analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Grading multiplier snapshots table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS grading_multipliers (
+                    id SERIAL PRIMARY KEY,
+                    card_name VARCHAR(255) NOT NULL,
+                    ungraded_avg_price DECIMAL(10,2),
+                    psa10_avg_price DECIMAL(10,2),
+                    multiplier DECIMAL(6,2),
+                    net_profit DECIMAL(10,2),
+                    roi_percentage DECIMAL(8,2),
+                    worth_grading BOOLEAN,
+                    snapshot_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # BUY/SELL/HOLD signals table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS trading_signals (
+                    id SERIAL PRIMARY KEY,
+                    card_name VARCHAR(255) NOT NULL,
+                    price DECIMAL(10,2),
+                    signal VARCHAR(10),
+                    confidence DECIMAL(5,2),
+                    z_score DECIMAL(6,3),
+                    reason TEXT,
+                    signal_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Card metadata table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS card_metadata (
+                    id SERIAL PRIMARY KEY,
+                    card_name VARCHAR(255) NOT NULL UNIQUE,
+                    inception_date TIMESTAMP,
+                    set_name VARCHAR(255),
+                    card_number VARCHAR(50),
+                    rarity VARCHAR(50),
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
 
             # Create indexes for performance
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_card_name_date ON card_prices(card_name, date_recorded)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_source_date ON card_prices(source, date_recorded)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_graded ON card_prices(graded, grade_value)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_backtest_card ON backtesting_results(card_name)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_grading_card ON grading_multipliers(card_name)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_signals_card ON trading_signals(card_name, signal_date)"))
 
             conn.commit()
 
@@ -346,6 +472,88 @@ class EnhancedDatabaseManager:
 
         except Exception as e:
             self.logger.error(f"Error saving analysis results: {e}")
+    
+    def save_backtesting_results(self, card_name: str, metrics: Dict[str, Any]):
+        """Save backtesting results to database"""
+        try:
+            with self.engine.connect() as conn:
+                insert_query = text("""
+                    INSERT INTO backtesting_results 
+                    (card_name, inception_date, total_return_pct, annualized_return_pct,
+                     sharpe_ratio, volatility, mean_price, std_dev, trend)
+                    VALUES (:card_name, :inception_date, :total_return_pct, :annualized_return_pct,
+                            :sharpe_ratio, :volatility, :mean_price, :std_dev, :trend)
+                """)
+                
+                conn.execute(insert_query, {
+                    'card_name': card_name,
+                    'inception_date': metrics.get('inception_date'),
+                    'total_return_pct': metrics.get('total_return_pct'),
+                    'annualized_return_pct': metrics.get('annualized_return_pct'),
+                    'sharpe_ratio': metrics.get('sharpe_ratio'),
+                    'volatility': metrics.get('volatility'),
+                    'mean_price': metrics.get('mean_price'),
+                    'std_dev': metrics.get('std_dev'),
+                    'trend': metrics.get('trend')
+                })
+                
+                conn.commit()
+                self.logger.info(f"Saved backtesting results for {card_name}")
+                
+        except Exception as e:
+            self.logger.error(f"Error saving backtesting results: {e}")
+    
+    def save_grading_analysis(self, card_name: str, analysis: Dict[str, Any]):
+        """Save grading multiplier analysis to database"""
+        try:
+            with self.engine.connect() as conn:
+                insert_query = text("""
+                    INSERT INTO grading_multipliers 
+                    (card_name, ungraded_avg_price, psa10_avg_price, multiplier,
+                     net_profit, roi_percentage, worth_grading)
+                    VALUES (:card_name, :ungraded_avg_price, :psa10_avg_price, :multiplier,
+                            :net_profit, :roi_percentage, :worth_grading)
+                """)
+                
+                conn.execute(insert_query, {
+                    'card_name': card_name,
+                    'ungraded_avg_price': analysis.get('ungraded_avg_price'),
+                    'psa10_avg_price': analysis.get('psa10_avg_price'),
+                    'multiplier': analysis.get('multiplier'),
+                    'net_profit': analysis.get('net_profit'),
+                    'roi_percentage': analysis.get('roi_percentage'),
+                    'worth_grading': analysis.get('worth_grading')
+                })
+                
+                conn.commit()
+                self.logger.info(f"Saved grading analysis for {card_name}")
+                
+        except Exception as e:
+            self.logger.error(f"Error saving grading analysis: {e}")
+    
+    def save_trading_signal(self, card_name: str, signal: Dict[str, Any]):
+        """Save trading signal to database"""
+        try:
+            with self.engine.connect() as conn:
+                insert_query = text("""
+                    INSERT INTO trading_signals 
+                    (card_name, price, signal, confidence, z_score, reason)
+                    VALUES (:card_name, :price, :signal, :confidence, :z_score, :reason)
+                """)
+                
+                conn.execute(insert_query, {
+                    'card_name': card_name,
+                    'price': signal.get('current_price'),
+                    'signal': signal.get('signal'),
+                    'confidence': signal.get('confidence'),
+                    'z_score': signal.get('z_score'),
+                    'reason': signal.get('reason')
+                })
+                
+                conn.commit()
+                
+        except Exception as e:
+            self.logger.error(f"Error saving trading signal: {e}")
 
     def get_market_summary_vectorized(self) -> Dict[str, Any]:
         """Get vectorized market summary statistics"""
