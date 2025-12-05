@@ -221,6 +221,7 @@ class EnhancedDatabaseManager:
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_card_name_date ON card_prices(card_name, date_recorded)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_source_date ON card_prices(source, date_recorded)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_price_date ON card_prices(price, date_recorded)"))
+            # Composite index for common grading queries (graded cards filtered by grade value)
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_graded ON card_prices(graded, grade_value)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_analysis_card ON analysis_results(card_name)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_backtest_card ON backtesting_results(card_name)"))
@@ -323,6 +324,7 @@ class EnhancedDatabaseManager:
             # Create indexes for performance
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_card_name_date ON card_prices(card_name, date_recorded)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_source_date ON card_prices(source, date_recorded)"))
+            # Composite index for common grading queries (graded cards filtered by grade value)
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_graded ON card_prices(graded, grade_value)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_backtest_card ON backtesting_results(card_name)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_grading_card ON grading_multipliers(card_name)"))

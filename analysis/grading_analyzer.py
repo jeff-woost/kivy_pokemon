@@ -47,8 +47,8 @@ class GradingAnalyzer:
         df = pd.DataFrame(price_history)
         
         # Separate graded and ungraded prices
-        graded_df = df[df['graded'] == True]
-        ungraded_df = df[df['graded'] == False]
+        graded_df = df[df['graded'].astype(bool)]
+        ungraded_df = df[~df['graded'].astype(bool)]
         
         if graded_df.empty or ungraded_df.empty:
             self.logger.warning("Insufficient graded or ungraded price data")

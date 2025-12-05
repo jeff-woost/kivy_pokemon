@@ -62,8 +62,8 @@ class PriceChartWidget(QWidget):
         df = df.sort_values('date')
         
         # Separate graded and ungraded
-        graded_df = df[df['graded'] == True]
-        ungraded_df = df[df['graded'] == False]
+        graded_df = df[df['graded'].astype(bool)]
+        ungraded_df = df[~df['graded'].astype(bool)]
         
         # Clear previous plot
         self.figure.clear()
@@ -144,8 +144,8 @@ class PriceChartWidget(QWidget):
         df = df.sort_values('date')
         
         # Separate graded and ungraded
-        graded_df = df[df['graded'] == True].copy()
-        ungraded_df = df[df['graded'] == False].copy()
+        graded_df = df[df['graded'].astype(bool)].copy()
+        ungraded_df = df[~df['graded'].astype(bool)].copy()
         
         if graded_df.empty or ungraded_df.empty:
             self.logger.warning("Insufficient data for graded vs ungraded comparison")
