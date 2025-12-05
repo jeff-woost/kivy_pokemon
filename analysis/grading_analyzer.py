@@ -17,6 +17,10 @@ class GradingAnalyzer:
         'CGC': {'economy': 18, 'regular': 30, 'express': 65},
     }
     
+    # Minimum thresholds for recommendations
+    MIN_NET_PROFIT_GOOD = 50.0  # Minimum profit for GOOD recommendation
+    MIN_NET_PROFIT_MARGINAL = 25.0  # Minimum profit for MARGINAL recommendation
+    
     def __init__(self, default_grading_cost: float = 35.0):
         """
         Initialize grading analyzer
@@ -51,7 +55,7 @@ class GradingAnalyzer:
             return self._get_empty_results()
             
         # Calculate statistics
-        avg_ungraded = graded_df['price'].mean()
+        avg_ungraded = ungraded_df['price'].mean()
         avg_graded = graded_df['price'].mean()
         
         # Filter for PSA 10 specifically if available
@@ -111,7 +115,7 @@ class GradingAnalyzer:
         self, 
         all_cards_data: List[Dict], 
         min_multiplier: float = 3.0,
-        min_net_profit: float = 50.0
+        min_net_profit: float = None
     ) -> List[Dict]:
         """
         Find cards with high grading multipliers
@@ -119,11 +123,14 @@ class GradingAnalyzer:
         Args:
             all_cards_data: List of card data dictionaries
             min_multiplier: Minimum graded/ungraded multiplier
-            min_net_profit: Minimum net profit after grading costs
+            min_net_profit: Minimum net profit after grading costs (default: MIN_NET_PROFIT_GOOD)
             
         Returns:
             List of cards sorted by profitability
         """
+        if min_net_profit is None:
+            min_net_profit = self.MIN_NET_PROFIT_GOOD
+            
         opportunities = []
         
         for card_data in all_cards_data:
@@ -222,9 +229,9 @@ class GradingAnalyzer:
             return "EXCELLENT - High priority grading candidate"
         elif multiplier >= 4.0 and net_profit >= 100:
             return "VERY GOOD - Strong grading opportunity"
-        elif multiplier >= 3.0 and net_profit >= 50:
+        elif multiplier >= 3.0 and net_profit >= self.MIN_NET_PROFIT_GOOD:
             return "GOOD - Worth considering for grading"
-        elif multiplier >= 2.0 and net_profit >= 25:
+        elif multiplier >= 2.0 and net_profit >= self.MIN_NET_PROFIT_MARGINAL:
             return "MARGINAL - Only if card condition is pristine"
         else:
             return "NOT RECOMMENDED - Grading costs outweigh benefits"

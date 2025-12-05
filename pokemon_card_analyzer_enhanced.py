@@ -526,7 +526,7 @@ Grading Opportunity:
             self.db_manager.save_trading_signal(card_name, results['current_signal'])
             
             # Save price data
-            from pokemon_card_analyzer_fixed import CardPrice
+            from common import CardPrice
             price_data_list = [
                 CardPrice(
                     date=p['date'],
