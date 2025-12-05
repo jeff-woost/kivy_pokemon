@@ -1,0 +1,100 @@
+{
+  "data": [
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.001132,
+      "tenorDays": 180,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.002733,
+      "tenorDays": 360,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.00567342,
+      "tenorDays": 720,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.007178087,
+      "tenorDays": 1080,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.008206835,
+      "tenorDays": 1440,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.008927063,
+      "tenorDays": 1800,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.009750811,
+      "tenorDays": 2520,
+      "valuationDate": "10/14/25"
+    },
+    {
+      "batchReference": "122afbf-961a-462f-8c34-e8a852068ac0",
+      "compoundingFrequency": "CONTINUOUS",
+      "currency": "USD",
+      "curveId": "SINGLENAME_BSPREAD_CP_TDBK_USSO_FVA_A",
+      "dayCount": "ACT360",
+      "extrapolation": "NEAR",
+      "interpolation": "MONOTON-CONVEX",
+      "rate": 0.010369063,
+      "tenorDays": 3600,
+      "valuationDate": "10/14/25"
+    }
+  ]
+}
