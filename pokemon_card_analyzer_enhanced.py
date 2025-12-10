@@ -18,8 +18,8 @@ from PyQt6.QtGui import QFont, QPalette, QColor
 # Import our modules
 from enhanced_database import EnhancedDatabaseManager
 from scrapers import ScraperManager
-from analysis import BacktestingEngine, GradingAnalyzer, SignalGenerator
-from ui import GradingOpportunitiesTab, BacktestingTab, PriceChartWidget
+from analysis import BacktestingEngine, GradingAnalyzer, SignalGenerator, TrendDetector
+from ui import GradingOpportunitiesTab, BacktestingTab, PriceChartWidget, GradeToFlipTab
 
 
 class DataAnalysisThread(QThread):
@@ -139,8 +139,9 @@ class PokemonCardAnalyzerEnhanced(QMainWindow):
             
         self.scraper_manager = ScraperManager()
         self.backtesting_engine = BacktestingEngine()
-        self.grading_analyzer = GradingAnalyzer()
+        self.grading_analyzer = GradingAnalyzer()  # Uses $15 grading cost by default
         self.signal_generator = SignalGenerator()
+        self.trend_detector = TrendDetector()
         
     def init_ui(self):
         """Initialize the user interface"""
@@ -184,6 +185,14 @@ class PokemonCardAnalyzerEnhanced(QMainWindow):
         # Grading opportunities tab
         self.grading_tab = GradingOpportunitiesTab(self.grading_analyzer)
         self.tab_widget.addTab(self.grading_tab, "Grading Opportunities")
+        
+        # Grade to Flip tab (NEW)
+        self.grade_to_flip_tab = GradeToFlipTab(
+            self.grading_analyzer,
+            self.scraper_manager,
+            self.db_manager
+        )
+        self.tab_widget.addTab(self.grade_to_flip_tab, "Grade to Flip")
         
         # Price chart tab
         self.chart_tab = self.create_chart_tab()
