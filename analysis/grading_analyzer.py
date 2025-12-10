@@ -10,23 +10,31 @@ import logging
 class GradingAnalyzer:
     """Analyzer for PSA 10 grading opportunities"""
     
-    # Typical grading costs
+    # Typical grading costs (as of 2024)
+    # Note: These costs may vary over time and by submission volume
+    # Users should verify current rates on grading company websites
     GRADING_COSTS = {
-        'PSA': {'economy': 20, 'regular': 35, 'express': 75},
-        'BGS': {'economy': 25, 'regular': 40, 'express': 80},
-        'CGC': {'economy': 18, 'regular': 30, 'express': 65},
+        'PSA': {'economy': 15, 'regular': 35, 'express': 75},
+        'BGS': {'economy': 15, 'regular': 40, 'express': 80},
+        'CGC': {'economy': 15, 'regular': 30, 'express': 65},
     }
+    
+    # Standard grading cost for Grade to Flip calculations (PSA economy)
+    STANDARD_GRADING_COST = 15.0
+    
+    # Minimum multiplier threshold for recommendations (3x rule)
+    MIN_MULTIPLIER = 3.0
     
     # Minimum thresholds for recommendations
     MIN_NET_PROFIT_GOOD = 50.0  # Minimum profit for GOOD recommendation
     MIN_NET_PROFIT_MARGINAL = 25.0  # Minimum profit for MARGINAL recommendation
     
-    def __init__(self, default_grading_cost: float = 35.0):
+    def __init__(self, default_grading_cost: float = 15.0):
         """
         Initialize grading analyzer
         
         Args:
-            default_grading_cost: Default cost for grading (in dollars)
+            default_grading_cost: Default cost for grading (in dollars), default $15
         """
         self.default_grading_cost = default_grading_cost
         self.logger = logging.getLogger(__name__)
@@ -84,9 +92,20 @@ class GradingAnalyzer:
         net_profit = gross_profit - grading_cost
         roi = (net_profit / (avg_ungraded + grading_cost)) * 100 if (avg_ungraded + grading_cost) > 0 else 0
         
+        # Calculate total investment (ungraded price + grading cost)
+        total_investment = avg_ungraded + grading_cost
+        
+        # Calculate the multiplier using the Grade to Flip formula
+        # Multiplier = graded_price / (ungraded_price + grading_cost)
+        grade_to_flip_multiplier = avg_psa10 / total_investment if total_investment > 0 else 0
+        
+        # Card is worth grading if: graded_price >= 3 * (ungraded_price + $15)
+        # Which is equivalent to: grade_to_flip_multiplier >= 3.0
+        worth_grading = grade_to_flip_multiplier >= self.MIN_MULTIPLIER
+        
         # Determine recommendation
         recommendation = self._get_grading_recommendation(
-            multiplier, net_profit, avg_ungraded
+            grade_to_flip_multiplier, net_profit, avg_ungraded
         )
         
         return {
@@ -96,13 +115,14 @@ class GradingAnalyzer:
             'graded_data_points': len(graded_df),
             'psa10_avg_price': float(avg_psa10),
             'psa10_data_points': psa10_count,
-            'multiplier': float(multiplier),
+            'multiplier': float(grade_to_flip_multiplier),  # Using Grade to Flip multiplier
             'grading_cost': grading_cost,
+            'total_investment': float(total_investment),
             'gross_profit': float(gross_profit),
             'net_profit': float(net_profit),
             'roi_percentage': float(roi),
             'recommendation': recommendation,
-            'worth_grading': multiplier >= 3.0 and net_profit > 50,
+            'worth_grading': worth_grading,
             
             # Additional statistics
             'ungraded_min': float(ungraded_df['price'].min()),

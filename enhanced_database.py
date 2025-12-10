@@ -216,6 +216,39 @@ class EnhancedDatabaseManager:
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            
+            # Multi-source prices table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS multi_source_prices (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_name TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    price REAL NOT NULL,
+                    normalized_price REAL,
+                    date_recorded TIMESTAMP NOT NULL,
+                    condition TEXT,
+                    graded BOOLEAN DEFAULT FALSE,
+                    grade_value REAL,
+                    data_quality_score REAL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Trend analysis table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS trend_analysis (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    card_name TEXT NOT NULL,
+                    trend_score REAL,
+                    price_velocity REAL,
+                    momentum_strength TEXT,
+                    prediction_direction TEXT,
+                    confidence_level TEXT,
+                    sources_count INTEGER,
+                    divergence_detected BOOLEAN,
+                    analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
 
             # Create optimized indexes for vectorized queries
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_card_name_date ON card_prices(card_name, date_recorded)"))
@@ -227,6 +260,8 @@ class EnhancedDatabaseManager:
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_backtest_card ON backtesting_results(card_name)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_grading_card ON grading_multipliers(card_name)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_signals_card ON trading_signals(card_name, signal_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_multi_source_card ON multi_source_prices(card_name, source, date_recorded)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_trend_card ON trend_analysis(card_name, analysis_date)"))
 
             conn.commit()
 
@@ -320,6 +355,39 @@ class EnhancedDatabaseManager:
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            
+            # Multi-source prices table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS multi_source_prices (
+                    id SERIAL PRIMARY KEY,
+                    card_name VARCHAR(255) NOT NULL,
+                    source VARCHAR(100) NOT NULL,
+                    price DECIMAL(10,2) NOT NULL,
+                    normalized_price DECIMAL(10,2),
+                    date_recorded TIMESTAMP NOT NULL,
+                    condition VARCHAR(100),
+                    graded BOOLEAN DEFAULT FALSE,
+                    grade_value DECIMAL(3,1),
+                    data_quality_score DECIMAL(5,2),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Trend analysis table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS trend_analysis (
+                    id SERIAL PRIMARY KEY,
+                    card_name VARCHAR(255) NOT NULL,
+                    trend_score DECIMAL(5,2),
+                    price_velocity DECIMAL(8,2),
+                    momentum_strength VARCHAR(50),
+                    prediction_direction VARCHAR(50),
+                    confidence_level VARCHAR(20),
+                    sources_count INTEGER,
+                    divergence_detected BOOLEAN,
+                    analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
 
             # Create indexes for performance
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_card_name_date ON card_prices(card_name, date_recorded)"))
@@ -329,6 +397,8 @@ class EnhancedDatabaseManager:
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_backtest_card ON backtesting_results(card_name)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_grading_card ON grading_multipliers(card_name)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_signals_card ON trading_signals(card_name, signal_date)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_multi_source_card ON multi_source_prices(card_name, source, date_recorded)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_trend_card ON trend_analysis(card_name, analysis_date)"))
 
             conn.commit()
 
@@ -599,6 +669,156 @@ class EnhancedDatabaseManager:
         except Exception as e:
             self.logger.error(f"Error getting market summary: {e}")
             return {}
+
+    def save_multi_source_prices(self, prices: List[Dict]):
+        """Save multi-source price data with normalization"""
+        try:
+            with self.engine.connect() as conn:
+                for price_data in prices:
+                    insert_query = text("""
+                        INSERT INTO multi_source_prices 
+                        (card_name, source, price, normalized_price, date_recorded,
+                         condition, graded, grade_value, data_quality_score)
+                        VALUES (:card_name, :source, :price, :normalized_price, :date_recorded,
+                                :condition, :graded, :grade_value, :data_quality_score)
+                    """)
+                    
+                    conn.execute(insert_query, {
+                        'card_name': price_data.get('card_name'),
+                        'source': price_data.get('source'),
+                        'price': price_data.get('price'),
+                        'normalized_price': price_data.get('normalized_price', price_data.get('price')),
+                        'date_recorded': price_data.get('date'),
+                        'condition': price_data.get('condition'),
+                        'graded': price_data.get('graded', False),
+                        'grade_value': price_data.get('grade_value'),
+                        'data_quality_score': price_data.get('data_quality_score', 50)
+                    })
+                    
+                conn.commit()
+                self.logger.info(f"Saved {len(prices)} multi-source price records")
+                
+        except Exception as e:
+            self.logger.error(f"Error saving multi-source prices: {e}")
+    
+    def save_trend_analysis(self, card_name: str, trend_data: Dict):
+        """Save trend analysis results"""
+        try:
+            with self.engine.connect() as conn:
+                insert_query = text("""
+                    INSERT INTO trend_analysis 
+                    (card_name, trend_score, price_velocity, momentum_strength,
+                     prediction_direction, confidence_level, sources_count, divergence_detected)
+                    VALUES (:card_name, :trend_score, :price_velocity, :momentum_strength,
+                            :prediction_direction, :confidence_level, :sources_count, :divergence_detected)
+                """)
+                
+                momentum = trend_data.get('momentum_indicators', {})
+                prediction = trend_data.get('prediction', {})
+                divergence = trend_data.get('divergence_analysis', {})
+                data_quality = trend_data.get('data_quality', {})
+                
+                conn.execute(insert_query, {
+                    'card_name': card_name,
+                    'trend_score': trend_data.get('trend_score'),
+                    'price_velocity': momentum.get('price_momentum'),
+                    'momentum_strength': momentum.get('momentum_strength'),
+                    'prediction_direction': prediction.get('direction'),
+                    'confidence_level': trend_data.get('confidence_level'),
+                    'sources_count': data_quality.get('sources_count', 0),
+                    'divergence_detected': divergence.get('has_divergence', False)
+                })
+                
+                conn.commit()
+                self.logger.info(f"Saved trend analysis for {card_name}")
+                
+        except Exception as e:
+            self.logger.error(f"Error saving trend analysis: {e}")
+    
+    def get_grade_to_flip_opportunities(self, min_multiplier: float = 3.0, min_profit: float = 0) -> List[Dict]:
+        """
+        Get cards meeting the Grade to Flip criteria (3x multiplier with $15 grading cost)
+        
+        Args:
+            min_multiplier: Minimum multiplier (default 3.0)
+            min_profit: Minimum net profit threshold
+            
+        Returns:
+            List of grading opportunities sorted by multiplier
+            Returns empty list if no data available or table doesn't exist yet
+            
+        Note:
+            Requires data in grading_multipliers table. Run grading analysis first
+            to populate this table with current market data.
+        """
+        try:
+            with self.engine.connect() as conn:
+                query = text("""
+                    SELECT 
+                        card_name,
+                        ungraded_avg_price,
+                        psa10_avg_price,
+                        multiplier,
+                        net_profit,
+                        roi_percentage,
+                        worth_grading,
+                        snapshot_date
+                    FROM grading_multipliers
+                    WHERE multiplier >= :min_multiplier
+                    AND net_profit >= :min_profit
+                    AND worth_grading = TRUE
+                    ORDER BY multiplier DESC
+                    LIMIT 100
+                """)
+                
+                result = conn.execute(query, {
+                    'min_multiplier': min_multiplier,
+                    'min_profit': min_profit
+                })
+                
+                opportunities = []
+                for row in result:
+                    opportunities.append({
+                        'card_name': row[0],
+                        'ungraded_avg_price': float(row[1]) if row[1] else 0,
+                        'psa10_avg_price': float(row[2]) if row[2] else 0,
+                        'multiplier': float(row[3]) if row[3] else 0,
+                        'net_profit': float(row[4]) if row[4] else 0,
+                        'roi_percentage': float(row[5]) if row[5] else 0,
+                        'worth_grading': bool(row[6]),
+                        'snapshot_date': row[7]
+                    })
+                    
+                return opportunities
+                
+        except Exception as e:
+            self.logger.error(f"Error getting grade to flip opportunities: {e}")
+            return []
+    
+    def get_multi_source_data(self, card_name: str, days_back: int = 365) -> pd.DataFrame:
+        """Get multi-source price data for a card"""
+        try:
+            cutoff_date = datetime.now() - pd.Timedelta(days=days_back)
+            
+            query = text("""
+                SELECT card_name, source, price, normalized_price, date_recorded,
+                       condition, graded, grade_value, data_quality_score
+                FROM multi_source_prices
+                WHERE card_name = :card_name
+                AND date_recorded >= :cutoff_date
+                ORDER BY date_recorded
+            """)
+            
+            df = pd.read_sql(query, self.engine, params={
+                'card_name': card_name,
+                'cutoff_date': cutoff_date
+            })
+            
+            return df
+            
+        except Exception as e:
+            self.logger.error(f"Error getting multi-source data: {e}")
+            return pd.DataFrame()
 
     def optimize_database(self):
         """Perform database optimization operations"""
