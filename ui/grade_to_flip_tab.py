@@ -85,7 +85,12 @@ class GradeToFlipScanThread(QThread):
 class GradeToFlipTab(QWidget):
     """Tab for finding profitable grading opportunities using 3x multiplier rule"""
     
-    GRADING_COST = 15.0  # Standard grading cost
+    # Standard grading cost (PSA economy service as of 2024)
+    # Can be adjusted for different service tiers:
+    # - Economy: $15
+    # - Regular: $35
+    # - Express: $75+
+    GRADING_COST = 15.0
     
     def __init__(self, grading_analyzer=None, scraper_manager=None, db_manager=None):
         super().__init__()

@@ -71,6 +71,9 @@ class TrendDetector:
             data_quality = data.get('data_quality', {})
             
             # Factor 1: Price velocity (40 points max)
+            # Formula: Maps price velocity to score
+            # -10% velocity = 0 points, 0% = 20 points, +10% = 40 points
+            # velocity_score = min(40, max(0, (velocity + 10) * 2))
             velocity = trend_indicators.get('price_velocity_pct', 0)
             velocity_score = min(40, max(0, (velocity + 10) * 2))  # Map -10% to +10% to 0-40
             

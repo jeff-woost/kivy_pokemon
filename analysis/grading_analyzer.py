@@ -10,14 +10,16 @@ import logging
 class GradingAnalyzer:
     """Analyzer for PSA 10 grading opportunities"""
     
-    # Typical grading costs
+    # Typical grading costs (as of 2024)
+    # Note: These costs may vary over time and by submission volume
+    # Users should verify current rates on grading company websites
     GRADING_COSTS = {
         'PSA': {'economy': 15, 'regular': 35, 'express': 75},
         'BGS': {'economy': 15, 'regular': 40, 'express': 80},
         'CGC': {'economy': 15, 'regular': 30, 'express': 65},
     }
     
-    # Standard grading cost for Grade to Flip calculations
+    # Standard grading cost for Grade to Flip calculations (PSA economy)
     STANDARD_GRADING_COST = 15.0
     
     # Minimum multiplier threshold for recommendations (3x rule)

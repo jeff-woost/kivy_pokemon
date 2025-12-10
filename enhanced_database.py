@@ -745,6 +745,11 @@ class EnhancedDatabaseManager:
             
         Returns:
             List of grading opportunities sorted by multiplier
+            Returns empty list if no data available or table doesn't exist yet
+            
+        Note:
+            Requires data in grading_multipliers table. Run grading analysis first
+            to populate this table with current market data.
         """
         try:
             with self.engine.connect() as conn:

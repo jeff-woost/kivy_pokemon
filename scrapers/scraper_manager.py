@@ -29,7 +29,8 @@ class ScraperManager:
         
         Args:
             card_name: Name of the card to search
-            max_workers: Number of parallel scraping threads
+            max_workers: Number of parallel scraping threads (default 4, one per source)
+                        Note: Each scraper has its own rate limiting (2-4 sec between requests)
             
         Returns:
             Combined list of all price data
